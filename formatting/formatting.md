@@ -18,8 +18,8 @@ type T struct {
 
 Some formatting details remain. Very briefly:
 
-* Indentation: We use **tabs** for indentation and gofmt emits them by default. Use spaces only if you must.
+* Indentation: We use **_tabs_** for indentation and gofmt emits them by default. Use spaces only if you must.
 
-* Line length: Go has **no line length limit**. Don't worry about overflowing a punched card. If a line feels too long, wrap it and indent with an extra tab.
+* Line length: Go has **_no line length limit_**. Don't worry about overflowing a punched card. If a line feels too long, wrap it and indent with an extra tab.
 
 * Parentheses: Go needs fewer parentheses than C and Java: control structures (if, for, switch) do not have parentheses in their syntax.
