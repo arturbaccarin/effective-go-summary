@@ -4,7 +4,7 @@ With Go we take an unusual approach and let the machine take care of most format
 
 As an example, there's no need to spend time lining up the comments on the fields of a structure. Gofmt will do that for you. Given the declaration:
 
-```
+```go
 type T struct {
     name string // name of the object
     value int // its value
