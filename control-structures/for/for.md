@@ -2,7 +2,7 @@
 
 It unifies for and while and there is no do-while. There are three forms, only one of which has semicolons.
 
-```
+```go
 // Like a C for
 for init; condition; post { }
 
@@ -15,7 +15,7 @@ for { }
 
 Short declarations make it easy to declare the index variable right in the loop.
 
-```
+```go
 sum := 0
 for i := 0; i < 10; i++ {
     sum += i
@@ -24,7 +24,7 @@ for i := 0; i < 10; i++ {
 
 If you're looping over an array, slice, string, or map, or reading from a channel, a range clause can manage the loop.
 
-```
+```go
 for key, value := range oldMap {
     newMap[key] = value
 }
@@ -32,7 +32,7 @@ for key, value := range oldMap {
 
 If you **_only need the first item_** in the range (the key or index), **_drop the second_**:
 
-```
+```go
 for key := range m {
     if key.expired() {
         delete(m, key)
@@ -42,7 +42,7 @@ for key := range m {
 
 If you **_only need the second item_** in the range (the value), **_use the blank identifier_**, an underscore, to discard the first:
 
-```
+```go
 sum := 0
 for _, value := range array {
     sum += value
@@ -53,9 +53,10 @@ For strings, the range does more work for you, breaking out individual Unicode c
 
 Go doesn't just loop over bytes. Instead, it decodes the string into runes (Unicode code points) from its UTF-8 encoded bytes.
 
-```
+```go
 s := "café"
 ```
+
 * 'c', 'a', 'f' = 1 byte each
 
 * 'é' = 2 bytes in UTF-8

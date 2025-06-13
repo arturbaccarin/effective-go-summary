@@ -6,7 +6,7 @@ If you have a field called `owner` (lower case, unexported), **_the getter metho
 
 A **_setter function_**, if needed, will likely **_be called SetOwner_**.
 
-```
+```go
 owner := obj.Owner()
 if owner != user {
     obj.SetOwner(user)

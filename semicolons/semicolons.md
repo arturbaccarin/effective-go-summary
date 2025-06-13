@@ -24,14 +24,16 @@ A semicolon can also be omitted immediately before a closing brace, so a stateme
  Idiomatic Go programs **_have semicolons_** only in places such as for loop clauses, to separate the initializer, condition, and continuation elements. They are also necessary to separate multiple statements on a line, should you write code that way.
 
  One consequence of the semicolon insertion rules is that **_you cannot put the opening brace of a control structure (if, for, switch, or select) on the next line_**. If you do, a semicolon will be inserted before the brace, which could cause unwanted effects. Write them like this:
- ```
+
+ ```go
  if i < f() {
     g()
 }
  ```
 
  not like this
- ```
+
+ ```go
  if i < f()  // wrong!
 {           // wrong!
     g()
