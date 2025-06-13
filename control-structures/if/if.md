@@ -45,3 +45,17 @@ codeUsing(f, d)
 ```
 
 ## Redeclaration and reassignment
+
+The declaration that calls os.Open reads,
+
+```
+f, err := os.Open(name)
+```
+
+This statement declares two variables, f and err. A few lines later, the call to f.Stat reads,
+
+```
+d, err := f.Stat()
+```
+
+which looks as if it declares d and err. Notice, though, that err appears in both statements. This duplication is legal: err is declared by the first statement, **_but only re-assigned in the second_**. This means that the call to f.Stat uses the existing err variable declared above, and just gives it a new value.
