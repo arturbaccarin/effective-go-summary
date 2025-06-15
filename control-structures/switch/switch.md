@@ -2,7 +2,7 @@
 
 The expressions need not be constants or even integers, the cases are evaluated top to bottom until a match is found, and if the switch has no expression it switches on true. It's therefore possible—and idiomatic—to write an if-else-if-else chain as a switch.
 
-```
+```go
 func unhex(c byte) byte {
     switch {
     case '0' <= c && c <= '9':
@@ -18,7 +18,7 @@ func unhex(c byte) byte {
 
 **_There is no automatic fall through, but cases can be presented in comma-separated lists._**
 
-```
+```go
 func shouldEscape(c byte) bool {
     switch c {
     case ' ', '?', '&', '=', '#', '+', '%':
@@ -32,7 +32,7 @@ Break statements can be used to terminate a switch early.
 
 **_Sometimes, though, it's necessary to break out of a surrounding loop, not the switch_**, and in Go that **_can be accomplished by putting a label on the loop and "breaking" to that label_**. This example shows both uses.
 
-```
+```go
 Loop:
     for n := 0; n < len(src); n += size {
         switch {
@@ -67,7 +67,7 @@ If the switch declares a variable in the expression, the variable will have the 
 
 It's also idiomatic to reuse the name in such cases, in effect declaring a new variable with the same name but a different type in each case.
 
-```
+```go
 var t interface{}
 t = functionOfSomeType()
 switch t := t.(type) {
