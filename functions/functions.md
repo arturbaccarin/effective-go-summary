@@ -74,3 +74,76 @@ func Contents(filename string) (string, error) {
     return string(result), nil // f will be closed if we return here.
 }
 ```
+
+Deferring a call to a function such as Close has two advantages:
+* First, it guarantees that you will never forget to close the file, a mistake that's easy to make if you later edit the function to add a new return path.
+* Second, it means that the close sits near the open, which is much clearer than placing it at the end of the function.
+
+The arguments to the deferred function (which include the receiver if the function is a method) **_are evaluated when the defer executes, not when the call executes_**.
+
+Besides avoiding worries about variables changing values as the function executes, this means that a single deferred call site can defer multiple function executions.
+
+Deferred functions are executed in LIFO order, so this code will cause 4 3 2 1 0 to be printed when the function returns.
+```go
+func main() {
+	for i := 0; i < 5; i++ {
+		defer fmt.Printf("%d ", i)
+	}
+
+	fmt.Println("Hello, 世界")
+}
+
+// out: Hello, 世界
+// 4 3 2 1 0 
+```
+
+A more plausible example is a simple way to trace function execution through the program. We could write a couple of simple tracing routines like this:
+
+```go
+func trace(s string)   { fmt.Println("entering:", s) }
+func untrace(s string) { fmt.Println("leaving:", s) }
+
+// Use them like this:
+func a() {
+    trace("a")
+    defer untrace("a")
+    // do something....
+}
+```
+
+We can do better by exploiting the fact that **_arguments to deferred functions are evaluated when the defer executes_**. The tracing routine can set up the argument to the untracing routine. This example:
+
+```go
+func trace(s string) string {
+    fmt.Println("entering:", s)
+    return s
+}
+
+func un(s string) {
+    fmt.Println("leaving:", s)
+}
+
+func a() {
+    defer un(trace("a"))
+    fmt.Println("in a")
+}
+
+func b() {
+    defer un(trace("b"))
+    fmt.Println("in b")
+    a()
+}
+
+func main() {
+    b()
+}
+
+/*
+entering: b
+in b
+entering: a
+in a
+leaving: a
+leaving: b
+*/
+```
