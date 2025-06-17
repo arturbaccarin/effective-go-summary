@@ -135,3 +135,17 @@ But even this style isn't idiomatic Go. **_Use slices instead_**.
 Slices wrap arrays to give a more general, powerful, and convenient interface to sequences of data. Except for items with explicit dimension such as transformation matrices, **_most array programming in Go is done with slices rather than simple arrays_**.
 
 Slices hold references to an underlying array, and **_if you assign one slice to another, both refer to the same array. If a function takes a slice argument, changes it makes to the elements of the slice will be visible to the caller, analogous to passing a pointer to the underlying array_**.
+
+A Read function can therefore accept a slice argument rather than a pointer and a count; the length within the slice sets an upper limit of how much data to read.
+
+Here is the signature of the Read method of the File type in package os:
+
+```go
+func (f *File) Read(buf []byte) (n int, err error)
+```
+
+The method returns the number of bytes read and an error value, if any. To read into the first 32 bytes of a larger buffer buf, slice (here used as a verb) the buffer.
+
+```go
+n, err := f.Read(buf[0:32])
+```
