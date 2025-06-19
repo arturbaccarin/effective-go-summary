@@ -173,3 +173,170 @@ func Append(slice, data []byte) []byte {
 We must return the slice afterwards because, although Append can modify the elements of slice, the slice itself (the run-time data structure holding the pointer, length, and capacity) is passed by value.
 
 ## Two-dimensional slices
+
+Go's arrays and slices are one-dimensional. To create the equivalent of a 2D array or slice, it is necessary to define an array-of-arrays or slice-of-slices, like this:
+
+```go
+type Transform [3][3]float64  // A 3x3 array, really an array of arrays.
+type LinesOfText [][]byte     // A slice of byte slices.
+```
+
+Because slices are variable-length, it is possible to have each inner slice be a different length. That can be a common situation, as in our LinesOfText example: each line has an independent length.
+
+```go
+text := LinesOfText{
+    []byte("Now is the time"),
+    []byte("for all good gophers"),
+    []byte("to bring some fun to the party."),
+}
+```
+
+Sometimes it's necessary to allocate a 2D slice, a situation that can arise when processing scan lines of pixels, for instance. There are two ways to achieve this.
+
+* One is to allocate each slice independently;
+* The other is to allocate a single array and point the individual slices into it.
+
+If the slices might grow or shrink, they should be allocated independently to avoid overwriting the next line; if not, it can be more efficient to construct the object with a single allocation.
+
+For reference, here are sketches of the two methods. First, a line at a time:
+
+```go
+// Allocate the top-level slice.
+picture := make([][]uint8, YSize) // One row per unit of y.
+// Loop over the rows, allocating the slice for each row.
+for i := range picture {
+    picture[i] = make([]uint8, XSize)
+}
+```
+
+And now as one allocation, sliced into lines:
+
+```go
+// Allocate the top-level slice, the same as before.
+picture := make([][]uint8, YSize) // One row per unit of y.
+// Allocate one large slice to hold all the pixels.
+pixels := make([]uint8, XSize*YSize) // Has type []uint8 even though picture is [][]uint8.
+// Loop over the rows, slicing each row from the front of the remaining pixels slice.
+for i := range picture {
+    picture[i], pixels = pixels[:XSize], pixels[XSize:]
+}
+```
+
+## Maps
+
+Maps are a convenient and powerful built-in data structure that associate values of one type (the key) with values of another type (the element or value).
+
+The key can be of any type for which the equality operator is defined, such as integers, floating point and complex numbers, strings, pointers, interfaces (as long as the dynamic type supports equality).
+
+Slices cannot be used as map keys, because equality is not defined on them.
+
+Like slices, maps hold references to an underlying data structure. **_If you pass a map to a function that changes the contents of the map, the changes will be visible in the caller_**.
+
+```go
+var timeZone = map[string]int{
+    "UTC":  0*60*60,
+    "EST": -5*60*60,
+    "CST": -6*60*60,
+    "MST": -7*60*60,
+    "PST": -8*60*60,
+}
+```
+
+An attempt to fetch a map value with a key that is not present in the map will return the zero value for the type of the entries in the map. For instance, if the map contains integers, looking up a non-existent key will return 0.
+
+**_A set can be implemented as a map with value type bool_**. Set the map entry to true to put the value in the set, and then test it by simple indexing.
+
+```go
+attended := map[string]bool{
+    "Ann": true,
+    "Joe": true,
+    ...
+}
+
+if attended[person] { // will be false if person is not in the map
+    fmt.Println(person, "was at the meeting")
+}
+```
+
+**_Sometimes you need to distinguish a missing entry from a zero value_**. Is there an entry for "UTC" or is that 0 because it's not in the map at all? You can discriminate with a form of multiple assignment.
+
+```go
+var seconds int
+var ok bool
+seconds, ok = timeZone[tz]
+```
+
+For obvious reasons this **_is called the “comma ok” idiom_**.
+
+```go
+func offset(tz string) int {
+    if seconds, ok := timeZone[tz]; ok {
+        return seconds
+    }
+    log.Println("unknown time zone:", tz)
+    return 0
+}
+```
+
+To test for presence in the map without worrying about the actual value, you can use the blank identifier (_) in place of the usual variable for the value.
+
+```go
+_, present := timeZone[tz]
+```
+
+To delete a map entry, use the delete built-in function, whose arguments are the map and the key to be deleted. **_It's safe to do this even if the key is already absent from the map_**.
+
+```go
+delete(timeZone, "PDT")  // Now on Standard Time
+```
+
+## Printing
+
+The functions live in the fmt package and have capitalized names: fmt.Printf, fmt.Fprintf, fmt.Sprintf and so on. The string functions (Sprintf etc.) return a string rather than filling in a provided buffer.
+
+You don't need to provide a format string. For each of Printf, Fprintf and Sprintf there is another pair of functions, for instance Print and Println. These functions do not take a format string but instead generate a default format for each argument.
+
+The Println versions also insert a blank between arguments and append a newline to the output while the Print versions add blanks only if the operand on neither side is a string. In this example each line produces the same output.
+
+```go
+fmt.Printf("Hello %d\n", 23)
+fmt.Fprint(os.Stdout, "Hello ", 23, "\n")
+fmt.Println("Hello", 23)
+fmt.Println(fmt.Sprint("Hello ", 23))
+```
+
+The formatted print functions **_fmt.Fprint and friends take as a first argument any object that implements the io.Writer interface_**; the variables os.Stdout and os.Stderr are familiar instances.
+
+If you just want the default conversion, such as decimal for integers, you can use the catchall **_format %v (for “value”); the result is exactly what Print and Println would produce_**.
+
+Moreover, **_that format can print any value, even arrays, slices, structs, and maps_**.
+
+```go
+fmt.Printf("%v\n", timeZone)  // or just fmt.Println(timeZone)
+
+// output: map[CST:-21600 EST:-18000 MST:-25200 PST:-28800 UTC:0]
+```
+
+When printing a struct, the modified **_format %+v annotates the fields of the structure with their names_**, and **_for any value the alternate format %#v prints the value in full Go syntax_**.
+
+```go
+type T struct {
+    a int
+    b float64
+    c string
+}
+t := &T{ 7, -2.35, "abc\tdef" }
+fmt.Printf("%v\n", t)
+fmt.Printf("%+v\n", t)
+fmt.Printf("%#v\n", t)
+fmt.Printf("%#v\n", timeZone)
+
+/*
+&{7 -2.35 abc   def}
+&{a:7 b:-2.35 c:abc     def}
+&main.T{a:7, b:-2.35, c:"abc\tdef"}
+map[string]int{"CST":-21600, "EST":-18000, "MST":-25200, "PST":-28800, "UTC":0}
+*/
+```
+
+(Note the ampersands.)
