@@ -339,4 +339,76 @@ map[string]int{"CST":-21600, "EST":-18000, "MST":-25200, "PST":-28800, "UTC":0}
 */
 ```
 
-(Note the ampersands.)
+That quoted string format is also available through **_%q when applied to a value of type string or []byte. The alternate format %#q will use backquotes instead if possible_**. (The %q format also applies to integers and runes, producing a single-quoted rune constant.) Also, **_%x works on strings, byte arrays and byte slices as well as on integers, generating a long hexadecimal string, and with a space in the format (% x) it puts spaces between the bytes._**
+
+Another handy format is **_%T, which prints the type of a value_**.
+
+```go
+fmt.Printf("%T\n", timeZone)
+
+// map[string]int
+```
+
+If you want to **_control the default format for a custom type_**, all that's required is to define a method with the signature String() string on the type. For our simple type T, that might look like this.
+
+```go
+func (t *T) String() string {
+    return fmt.Sprintf("%d/%g/%q", t.a, t.b, t.c)
+}
+fmt.Printf("%v\n", t)
+
+// 7/-2.35/"abc\tdef"
+```
+
+Our String method is able to call Sprintf because the print routines are fully reentrant and can be wrapped this way. There is one important detail to understand about this approach, however: **_don't construct a String method by calling Sprintf in a way that will recur into your String method indefinitely_**. This can happen if the Sprintf call attempts to print the receiver directly as a string, which in turn will invoke the method again. It's a common and easy mistake to make, as this example shows.
+
+```go
+type MyString string
+
+func (m MyString) String() string {
+    return fmt.Sprintf("MyString=%s", m) // Error: will recur forever.
+}
+
+// TO FIX
+type MyString string
+
+func (m MyString) String() string {
+    return fmt.Sprintf("MyString=%s", string(m)) // OK: note conversion.
+}
+```
+
+Another printing technique is to pass a print routine's arguments directly to another such routine. The signature of Printf uses the type ...interface{} for its final argument to specify that an arbitrary number of parameters (of arbitrary type) can appear after the format.
+
+```go
+func Printf(format string, v ...interface{}) (n int, err error) {
+```
+
+Within the function Printf, v acts like a variable of type []interface{} but if it is passed to another variadic function, it acts like a regular list of arguments. Here is the implementation of the function log.Println we used above. It passes its arguments directly to fmt.Sprintln for the actual formatting.
+
+```go
+// Println prints to the standard logger in the manner of fmt.Println.
+func Println(v ...interface{}) {
+    std.Output(2, fmt.Sprintln(v...))  // Output takes parameters (int, string)
+}
+```
+
+## Append
+
+Now we have the missing piece we needed to explain the design of the append built-in function. The signature of append is different from our custom Append function above. Schematically, it's like this:
+
+```go
+func append(slice []T, elements ...T) []T
+```
+
+where T is a placeholder for any given type. **_You can't actually write a function in Go where the type T is determined by the caller. That's why append is built in: it needs support from the compiler_**.
+
+But what if we wanted to do what our Append does and append a slice to a slice? Easy: use ... at the call site, just as we did in the call to Output above. This snippet produces identical output to the one above.
+
+```go
+x := []int{1,2,3}
+y := []int{4,5,6}
+x = append(x, y...)
+fmt.Println(x)
+```
+
+Without that ..., it wouldn't compile because the types would be wrong; y is not of type int.
