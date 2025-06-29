@@ -65,6 +65,8 @@ doSomethingForAWhile()
 
 **_A buffered channel can be used like a semaphore, for instance to limit throughput_**. In this example, **_incoming requests are passed to handle, which sends a value into the channel, processes the request, and then receives a value from the channel to ready the “semaphore” for the next consumer_**. The capacity of the channel buffer limits the number of simultaneous calls to process.
 
+Once MaxOutstanding handlers are executing process, any more will block trying to send into the filled channel buffer, until one of the existing handlers finishes and receives from the buffer.
+
 ```go
 var sem = make(chan int, MaxOutstanding)
 
@@ -79,5 +81,100 @@ func Serve(queue chan *Request) {
         req := <-queue
         go handle(req)  // Don't wait for handle to finish.
     }
+}
+```
+
+This design has a problem, though: Serve creates a new goroutine for every incoming request, even though only MaxOutstanding of them can run at any moment. As a result, the program can consume unlimited resources if the requests come in too fast. 
+
+We can address that deficiency by changing Serve to gate the creation of the goroutines:
+
+```go
+func Serve(queue chan *Request) {
+    for req := range queue {
+        sem <- 1 // Wait for space in the semaphore (limit active handlers).
+        go func() {
+            process(req)
+            <-sem // Release the slot in the semaphore after processing.
+        }()
+    }
+}
+```
+
+Another approach that manages resources well is to start a fixed number of handle goroutines all reading from the request channel. The number of goroutines limits the number of simultaneous calls to process. This Serve function also accepts a channel on which it will be told to exit; after launching the goroutines it blocks receiving from that channel.
+
+```go
+func handle(queue chan *Request) {
+    for r := range queue {
+        process(r)
+    }
+}
+
+func Serve(clientRequests chan *Request, quit chan bool) {
+    // Start handlers
+    for i := 0; i < MaxOutstanding; i++ {
+        go handle(clientRequests)
+    }
+    <-quit  // Wait to be told to exit.
+}
+```
+
+## Channels of channels
+
+One of the most important properties of Go is that a channel is a first-class value that can be allocated and passed around like any other. A common use of this property is to implement safe, parallel demultiplexing.
+
+In the example in the previous section, handle was an idealized handler for a request but we didn't define the type it was handling. If that type includes a channel on which to reply, each client can provide its own path for the answer. Here's a schematic definition of type Request.
+
+```go
+type Request struct {
+    args        []int
+    f           func([]int) int
+    resultChan  chan int
+}
+```
+
+The client provides a function and its arguments, as well as a channel inside the request object on which to receive the answer.
+
+```go
+func sum(a []int) (s int) {
+    for _, v := range a {
+        s += v
+    }
+    return
+}
+
+request := &Request{[]int{3, 4, 5}, sum, make(chan int)}
+// Send request
+clientRequests <- request
+// Wait for response.
+fmt.Printf("answer: %d\n", <-request.resultChan)
+```
+
+On the server side, the handler function is the only thing that changes.
+
+```go
+func handle(queue chan *Request) {
+    for req := range queue {
+        req.resultChan <- req.f(req.args)
+    }
+}
+```
+
+## Parallelization
+
+Another application of these ideas is to parallelize a calculation across multiple CPU cores. 
+
+If the calculation can be broken into separate pieces that can execute independently, it can be parallelized, with a channel to signal when each piece completes.
+
+Let's say we have an expensive operation to perform on a vector of items, and that the value of the operation on each item is independent, as in this idealized example.
+
+```go
+type Vector []float64
+
+// Apply the operation to v[i], v[i+1] ... up to v[n-1].
+func (v Vector) DoSome(i, n int, u Vector, c chan int) {
+    for ; i < n; i++ {
+        v[i] += u.Op(v[i])
+    }
+    c <- 1    // signal that this piece is done
 }
 ```
