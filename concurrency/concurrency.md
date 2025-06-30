@@ -178,3 +178,74 @@ func (v Vector) DoSome(i, n int, u Vector, c chan int) {
     c <- 1    // signal that this piece is done
 }
 ```
+
+We launch the pieces independently in a loop, one per CPU. They can complete in any order but it doesn't matter; we just count the completion signals by draining the channel after launching all the goroutines.
+
+```go
+const numCPU = 4 // number of CPU cores
+
+func (v Vector) DoAll(u Vector) {
+    c := make(chan int, numCPU)  // Buffering optional but sensible.
+    for i := 0; i < numCPU; i++ {
+        go v.DoSome(i*len(v)/numCPU, (i+1)*len(v)/numCPU, u, c)
+    }
+    // Drain the channel.
+    for i := 0; i < numCPU; i++ {
+        <-c    // wait for one task to complete
+    }
+    // All done.
+}
+```
+
+**_Rather than create a constant value for numCPU, we can ask the runtime what value is appropriate_**. The function runtime.NumCPU returns the number of hardware CPU cores in the machine, so we could write
+
+`var numCPU = runtime.NumCPU()`
+
+There is also a function **_runtime.GOMAXPROCS, which reports (or sets) the user-specified number of cores that a Go program can have running simultaneously. It defaults to the value of runtime.NumCPU but can be overridden_** by setting the similarly named shell environment variable or by calling the function with a positive number. Calling it with zero just queries the value. Therefore if we want to honor the user's resource request, we should write `var numCPU = runtime.GOMAXPROCS(0)`
+
+## A leaky buffer
+
+The tools of concurrent programming can even make non-concurrent ideas easier to express. Here's an example abstracted from an RPC package. The client goroutine loops receiving data from some source, perhaps a network.
+
+To avoid allocating and freeing buffers, it keeps a free list, and uses a buffered channel to represent it. If the channel is empty, a new buffer gets allocated. Once the message buffer is ready, it's sent to the server on serverChan.
+
+```go
+var freeList = make(chan *Buffer, 100)
+var serverChan = make(chan *Buffer)
+
+func client() {
+    for {
+        var b *Buffer
+        // Grab a buffer if available; allocate if not.
+        select {
+        case b = <-freeList:
+            // Got one; nothing more to do.
+        default:
+            // None free, so allocate a new one.
+            b = new(Buffer)
+        }
+        load(b)              // Read next message from the net.
+        serverChan <- b      // Send to server.
+    }
+}
+```
+
+The server loop receives each message from the client, processes it, and returns the buffer to the free list.
+
+```go
+func server() {
+    for {
+        b := <-serverChan    // Wait for work.
+        process(b)
+        // Reuse buffer if there's room.
+        select {
+        case freeList <- b:
+            // Buffer on free list; nothing more to do.
+        default:
+            // Free list full, just carry on.
+        }
+    }
+}
+```
+
+The client attempts to retrieve a buffer from freeList; if none is available, it allocates a fresh one. The server's send to freeList puts b back on the free list unless the list is full, in which case the buffer is dropped on the floor to be reclaimed by the garbage collector.
