@@ -18,3 +18,5 @@ We believe that coupling exceptions to a control structure, as in the try-catch-
 Go takes a different approach. For plain error handling, Go’s multi-value returns make it easy to report an error without overloading the return value.
 
 ## Why goroutines instead of threads?
+
+Goroutines are part of making concurrency easy to use. The idea, which has been around for a while, **_is to multiplex independently executing functions—coroutines—onto a set of threads. When a coroutine blocks, such as by calling a blocking system call, the run-time automatically moves other coroutines on the same operating system thread to a different, runnable thread so they won’t be blocked_**. The programmer sees none of this, which is the point. The result, which we call goroutines, can be very cheap: they have little overhead beyond the memory for the stack, which is just a few kilobytes.
