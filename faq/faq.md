@@ -30,3 +30,13 @@ Yes and no. Although Go has types and methods and allows an object-oriented styl
 Object-oriented programming, at least in the best-known languages, involves too much discussion of the relationships between types, relationships that often could be derived automatically. Go takes a different approach.
 
 Rather than requiring the programmer to declare ahead of time that two types are related, in Go a type automatically satisfies any interface that specifies a subset of its methods. Besides reducing the bookkeeping, this approach has real advantages. Types can satisfy many interfaces at once, without the complexities of traditional multiple inheritance. Interfaces can be very lightweight—an interface with one or even zero methods can express a useful concept. Interfaces can be added after the fact if a new idea comes along or for testing—without annotating the original types. Because there are no explicit relationships between types and interfaces, there is no type hierarchy to manage or discuss.
+
+## Why does Go not support overloading of methods and operators?
+
+Experience with other languages told us that having a variety of methods with the same name but different signatures was occasionally useful but that it could also be confusing and fragile in practice. Matching only by name and requiring consistency in the types was a major simplifying decision in Go’s type system.
+
+## Why doesn’t Go have “implements” declarations?¶
+
+A Go type implements an interface by implementing the methods of that interface, nothing more. **_This property allows interfaces to be defined and used without needing to modify existing code_**.
+
+## How can I guarantee my type satisfies an interface?
