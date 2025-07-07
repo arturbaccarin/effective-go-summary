@@ -40,3 +40,16 @@ Experience with other languages told us that having a variety of methods with th
 A Go type implements an interface by implementing the methods of that interface, nothing more. **_This property allows interfaces to be defined and used without needing to modify existing code_**.
 
 ## How can I guarantee my type satisfies an interface?
+
+You can ask the compiler to check that the type T implements the interface I by attempting an assignment using the zero value for T or pointer to T, as appropriate:
+
+```go
+type T struct{}
+var _ I = T{}       // Verify that T implements I.
+var _ I = (*T)(nil) // Verify that *T implements I.
+```
+
+**_If T (or *T, accordingly) doesn’t implement I, the mistake will be caught at compile time_**.
+
+## Why doesn’t type T satisfy the Equal interface?
+
