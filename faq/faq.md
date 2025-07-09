@@ -91,3 +91,15 @@ func (t T3) Open() *os.File
 In Go, T3 does not satisfy Opener, although it might in another language.
 
 ## Can I convert a []T to an []interface{}?
+
+Not directly. It is disallowed by the language specification because the two types do not have the same representation in memory. It is necessary to copy the elements individually to the destination slice. This example converts a slice of int to a slice of interface{}:
+
+```go
+t := []int{1, 2, 3, 4}
+s := make([]interface{}, len(t))
+for i, v := range t {
+    s[i] = v
+}
+```
+
+## Can I convert []T1 to []T2 if T1 and T2 have the same underlying type?
