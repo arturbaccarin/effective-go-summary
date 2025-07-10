@@ -103,3 +103,47 @@ for i, v := range t {
 ```
 
 ## Can I convert []T1 to []T2 if T1 and T2 have the same underlying type?
+
+```go
+type T1 int
+type T2 int
+var t1 T1
+var x = T2(t1) // OK
+var st1 []T1
+var sx = ([]T2)(st1) // NOT OK
+```
+
+The general rule is that you can change the name of the type being converted (and thus possibly change its method set) but you can’t change the name (and method set) of elements of a composite type. Go requires you to be explicit about type conversions.
+
+## Why is my nil error value not equal to nil?
+
+Under the covers, interfaces are implemented as two elements, a type T and a value V. V is a concrete value such as an int, struct or pointer, never an interface itself, and has type T. For instance, if we store the int value 3 in an interface, the resulting interface value has, schematically, (T=int, V=3). The value V is also known as the interface’s dynamic value, since a given interface variable might hold different values V (and corresponding types T) during the execution of the program.
+
+**_An interface value is nil only if the V and T are both unset_**.
+
+In particular, a nil interface will always hold a nil type. If we store a nil pointer of type *int inside an interface value, the inner type will be \*int regardless of the value of the pointer: (T=\*int, V=nil). **_Such an interface value will therefore be non-nil even when the pointer value V inside is nil_**.
+
+This situation can be confusing, and arises when a nil value is stored inside an interface value such as an error return:
+
+```go
+func returnsError() error {
+    var p *MyError = nil
+    if bad() {
+        p = ErrBad
+    }
+    return p // Will always return a non-nil error.
+}
+```
+
+If all goes well, the function returns a nil p, so the return value is an error interface value holding (T=*MyError, V=nil). This means that if the caller compares the returned error to nil, it will always look as if there was an error even if nothing bad happened. To return a proper nil error to the caller, the function must return an explicit nil:
+
+```go
+func returnsError() error {
+    if bad() {
+        return ErrBad
+    }
+    return nil
+}
+```
+
+It’s a good idea for functions that return errors always to use the error type in their signature (as we did above) rather than a concrete type such as *MyError, to help guarantee the error is created correctly.
