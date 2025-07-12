@@ -157,3 +157,25 @@ Go supports zero-size types, such as a struct with no fields (struct{}) or an ar
 Moreover, **_the language does not make any guarantees as to whether pointers to two different zero-size variables will compare equal or not. Such comparisons may even return true at one point in the program and then return false at a different point_**, depending on exactly how the program is compiled and executed.
 
 A separate issue with zero-size types is that a pointer to a zero-size struct field must not overlap with a pointer to a different object in memory. That could cause confusion in the garbage collector. This means that if the last field in a struct is zero-size, the struct will be padded to ensure that a pointer to the last field does not overlap with memory that immediately follows the struct.
+
+## Why does Go not have variant types?
+
+Variant types, also known as algebraic types, provide a way to specify that a value might take one of a set of other types, but only those types. A common example in systems programming would specify that an error is, say, a network error, a security error or an application error and allow the caller to discriminate the source of the problem by examining the type of the error. Another example is a syntax tree in which each node can be a different type: declaration, statement, assignment and so on.
+
+We considered adding variant types to Go, but after discussion decided to leave them out because they overlap in confusing ways with interfaces. What would happen if the elements of a variant type were themselves interfaces?
+
+Also, some of what variant types address is already covered by the language. The error example is easy to express using an interface value to hold the error and a type switch to discriminate cases. The syntax tree example is also doable, although not as elegantly.
+
+## Why don’t maps allow slices as keys?
+
+Map lookup requires an equality operator, which slices do not implement. They don’t implement equality because equality is not well defined on such types; there are multiple considerations involving shallow vs. deep comparison, pointer vs. value comparison, how to deal with recursive types, and so on. We may revisit this issue—and implementing equality for slices will not invalidate any existing programs—but without a clear idea of what equality of slices should mean, it was simpler to leave it out for now.
+
+Equality is defined for structs and arrays, so they can be used as map keys.
+
+## How are libraries documented?
+
+For access to documentation from the command line, the go tool has a doc subcommand that provides a textual interface to the documentation for declarations, files, packages and so on.
+
+The global package discovery page pkg.go.dev/pkg/. runs a server that extracts package documentation from Go source code anywhere on the web and serves it as HTML with links to the declarations and related elements. It is the easiest way to learn about existing Go libraries.
+
+## Is there a Go programming style guide?
