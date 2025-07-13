@@ -179,3 +179,33 @@ For access to documentation from the command line, the go tool has a doc subcomm
 The global package discovery page pkg.go.dev/pkg/. runs a server that extracts package documentation from Go source code anywhere on the web and serves it as HTML with links to the declarations and related elements. It is the easiest way to learn about existing Go libraries.
 
 ## Is there a Go programming style guide?
+
+There is no explicit style guide, although there is certainly a recognizable “Go style”.
+
+Go has established conventions to guide decisions around naming, layout, and file organization.
+
+More directly, the program gofmt is a pretty-printer whose purpose is to enforce layout rules; it replaces the usual compendium of dos and don’ts that allows interpretation. All the Go code in the repository, and the vast majority in the open source world, has been run through gofmt.
+
+## When should I use a pointer to an interface?
+
+Almost never. Pointers to interface values arise only in rare, tricky situations involving disguising an interface value’s type for delayed evaluation.
+
+It is a common mistake to pass a pointer to an interface value to a function expecting an interface. The compiler will complain about this error but the situation can still be confusing, because sometimes a pointer is necessary to satisfy an interface. The insight is that although **_a pointer to a concrete type can satisfy an interface, with one exception a pointer to an interface can never satisfy an interface_**.
+
+Consider the variable declaration,
+
+```go
+var w io.Writer
+```
+
+The printing function fmt.Fprintf takes as its first argument a value that satisfies io.Writer—something that implements the canonical Write method. Thus we can write
+
+```go
+fmt.Fprintf(w, "hello, world\n")
+```
+
+If however we pass the address of w, the program will not compile.
+
+```go
+fmt.Fprintf(&w, "hello, world\n") // Compile-time error.
+```
