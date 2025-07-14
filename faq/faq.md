@@ -209,3 +209,19 @@ If however we pass the address of w, the program will not compile.
 ```go
 fmt.Fprintf(&w, "hello, world\n") // Compile-time error.
 ```
+
+## Should I define methods on values or pointers?
+
+First, and most important, does the method need to modify the receiver? If it does, the receiver must be a pointer. (Slices and maps act as references, so their story is a little more subtle, but for instance to change the length of a slice in a method the receiver must still be a pointer.)
+
+Second is the consideration of efficiency. If the receiver is large, a big struct for instance, it may be cheaper to use a pointer receiver.
+
+Next is consistency. If some of the methods of the type must have pointer receivers, the rest should too, so the method set is consistent regardless of how the type is used.
+
+For types such as basic types, slices, and small structs, a value receiver is very cheap so unless the semantics of the method requires a pointer, a value receiver is efficient and clear.
+
+## What’s the difference between new and make?
+
+In short: new allocates memory, while make initializes the slice, map, and channel types.
+
+## What is the size of an int on a 64 bit machine?
