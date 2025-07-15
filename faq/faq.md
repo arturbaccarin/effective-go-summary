@@ -225,3 +225,9 @@ For types such as basic types, slices, and small structs, a value receiver is ve
 In short: new allocates memory, while make initializes the slice, map, and channel types.
 
 ## What is the size of an int on a 64 bit machine?
+
+The sizes of int and uint are implementation-specific but the same as each other on a given platform. For portability, code that relies on a particular size of value should use an explicitly sized type, like int64. On 32-bit machines the compilers use 32-bit integers by default, while on 64-bit machines integers have 64 bits. (Historically, this was not always true.)
+
+On the other hand, floating-point scalars and complex types are always sized (there are no float or complex basic types), because programmers should be aware of precision when using floating-point numbers. The default type used for an (untyped) floating-point constant is float64. Thus foo := 3.0 declares a variable foo of type float64. For a float32 variable initialized by an (untyped) constant, the variable type must be specified explicitly in the variable declaration:
+
+## How do I know whether a variable is allocated on the heap or the stack?
