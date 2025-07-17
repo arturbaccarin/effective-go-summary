@@ -237,3 +237,11 @@ The storage location does have an effect on writing efficient programs. When pos
 In the current compilers, if a variable has its address taken, that variable is a candidate for allocation on the heap. However, a basic escape analysis recognizes some cases when such variables will not live past the return from the function and can reside on the stack.
 
 ## What operations are atomic? What about mutexes?
+
+A description of the atomicity of operations in Go can be found in the Go Memory Model document.
+
+Low-level synchronization and atomic primitives are available in the sync and sync/atomic packages. These packages are good for simple tasks such as incrementing reference counts or guaranteeing small-scale mutual exclusion.
+
+For higher-level operations, such as coordination among concurrent servers, higher-level techniques can lead to nicer programs, and Go supports this approach through its goroutines and channels. For instance, you can structure your program so that only one goroutine at a time is ever responsible for a particular piece of data.
+
+Do not communicate by sharing memory. Instead, share memory by communicating.
