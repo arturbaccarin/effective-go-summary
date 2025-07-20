@@ -263,3 +263,7 @@ The runtime can allocate more threads than the value of GOMAXPROCS to service mu
 Go’s goroutine scheduler does well at balancing goroutines and threads, and can even preempt execution of a goroutine to make sure others on the same thread are not starved. However, it is not perfect. If you see performance issues, setting GOMAXPROCS on a per-application basis may help.
 
 ## Why is there no goroutine ID?
+
+Goroutines do not have names; they are just anonymous workers. They expose no unique identifier, name, or data structure to the programmer.
+
+## Why do T and *T have different method sets?
