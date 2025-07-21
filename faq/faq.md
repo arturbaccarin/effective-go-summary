@@ -267,3 +267,9 @@ Go’s goroutine scheduler does well at balancing goroutines and threads, and ca
 Goroutines do not have names; they are just anonymous workers. They expose no unique identifier, name, or data structure to the programmer.
 
 ## Why do T and *T have different method sets?
+
+As the Go specification says, the method set of a type T consists of all methods with receiver type T, while that of the corresponding pointer type *T consists of all methods with receiver *T or T. That means the method set of *T includes that of T, but not the reverse.
+
+This distinction arises because if an interface value contains a pointer *T, a method call can obtain a value by dereferencing the pointer, but if an interface value contains a value T, there is no safe way for a method call to obtain a pointer.
+
+## What happens with closures running as goroutines?
