@@ -273,3 +273,51 @@ As the Go specification says, the method set of a type T consists of all methods
 This distinction arises because if an interface value contains a pointer *T, a method call can obtain a value by dereferencing the pointer, but if an interface value contains a value T, there is no safe way for a method call to obtain a pointer.
 
 ## What happens with closures running as goroutines?
+
+```go
+func main() {
+    done := make(chan bool)
+
+    values := []string{"a", "b", "c"}
+    for _, v := range values {
+        go func() {
+            fmt.Println(v)
+            done <- true
+        }()
+    }
+
+    // wait for all goroutines to complete before exiting
+    for _ = range values {
+        <-done
+    }
+}
+```
+
+One might mistakenly expect to see a, b, c as the output. What you’ll probably see instead is c, c, c. This is because each iteration of the loop uses the same instance of the variable v, so each closure shares that single variable.
+
+To help detect this and other problems before they happen, run go vet.
+
+To bind the current value of v to each closure as it is launched, one must modify the inner loop to create a new variable each iteration. One way is to pass the variable as an argument to the closure:
+
+```go
+for _, v := range values {
+    go func(u string) {
+        fmt.Println(u)
+        done <- true
+    }(v)
+}
+```
+
+In this example, the value of v is passed as an argument to the anonymous function. That value is then accessible inside the function as the variable u.
+
+Even easier is just to create a new variable, using a declaration style that may seem odd but works fine in Go:
+
+```go
+for _, v := range values {
+    v := v // create a new 'v'.
+    go func() {
+        fmt.Println(v)
+        done <- true
+    }()
+}
+```
